@@ -70,7 +70,7 @@ extension KeyValuePublisher where ObservableObject : KeyValueObservable {
 public extension NSObject {
     
     func kvoProxy<Event>(atKey key: String) -> PublisherProxy<Event> {
-        return KeyValuePublisher(of: self, atKey: key).proxy
+        return KeyValuePublisher(of: self, atKey: key) <* PublisherProxy.init(strong:)
     }
     
 }
@@ -78,7 +78,7 @@ public extension NSObject {
 public extension KeyValueObservable where Self : NSObject {
     
     func kvoProxy<Event>(atKey key: ObservableKeys) -> PublisherProxy<Event> {
-        return KeyValuePublisher(of: self, atKey: key).proxy
+        return KeyValuePublisher(of: self, atKey: key) <* PublisherProxy.init(strong:)
     }
     
 }
