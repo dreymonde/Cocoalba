@@ -20,8 +20,8 @@ func usage() {
         }
     }
 
-    Notification.Name.NSThreadWillExit.proxy.listen { (object, userInfo) in
-        if let exitingThread = object as? Thread {
+    Notification.Name.NSThreadWillExit.proxy.listen { (notification) in
+        if let exitingThread = notification.object as? Thread {
             print("\(exitingThread) is exiting")
         }
     }

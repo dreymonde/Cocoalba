@@ -6,12 +6,20 @@ import Foundation
 
 public extension Notification.Name {
     
-    var proxy: PublisherProxy<(object: Any?, userInfo: [AnyHashable : Any]?)> {
+    var proxy: PublisherProxy<Notification> {
         return PublisherProxy(subscribe: { (ident, handler) in
             NotificationCenter.default.addObserver(forName: self,
                                                    object: nil,
-                                                   queue: nil) { handler(object: $0.object,
-                                                                         userInfo: $0.userInfo) }
+                                                   queue: nil) { handler($0) }
+        }, unsubscribe: { _ in })
+    }
+    
+    func proxy(object: Any?, queue: OperationQueue?) -> PublisherProxy<Notification> {
+        return PublisherProxy.init(subscribe: { (ident, handler) in
+            NotificationCenter.default.addObserver(forName: self,
+                                                   object: object,
+                                                   queue: queue,
+                                                   using: { handler($0) })
         }, unsubscribe: { _ in })
     }
         
@@ -47,7 +55,7 @@ public extension Notification.Name {
     
     public extension UIControl {
         
-        func proxy(forControlEvents controlEvents: UIControlEvents) -> PublisherProxy<Void> {
+        func proxy(forControlEvents controlEvents: UIControlEvents) -> PublisherProxy<()> {
             return UIControlPublisher(control: self, forControlEvents: controlEvents).publisher <* PublisherProxy.init(strong:)
         }
         
