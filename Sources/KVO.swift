@@ -17,9 +17,7 @@ public protocol KeyValueObservable {
 
 private var albaObservationContext = 0
 
-internal final class KeyValuePublisher<ObservableObject : NSObject, Event> : NSObject, PublisherProtocol {
-    
-    internal var subscribers: [ObjectIdentifier : (Event) -> ()] = [:]
+internal final class KeyValuePublisher<ObservableObject : NSObject, Event> : NSObject {
     
     internal let key: String
     internal let object: ObservableObject
@@ -31,6 +29,11 @@ internal final class KeyValuePublisher<ObservableObject : NSObject, Event> : NSO
         register()
     }
     
+    private let publisher = Publisher<Event>()
+    var proxy: Subscribe<Event> {
+        return publisher.proxy
+    }
+    
     deinit {
         object.removeObserver(self, forKeyPath: key)
     }
@@ -40,9 +43,9 @@ internal final class KeyValuePublisher<ObservableObject : NSObject, Event> : NSO
     }
     
     internal override func observeValue(forKeyPath keyPath: String?,
-                                      of object: Any?,
-                                      change: [NSKeyValueChangeKey : Any]?,
-                                      context: UnsafeMutableRawPointer?) {
+                                        of object: Any?,
+                                        change: [NSKeyValueChangeKey : Any]?,
+                                        context: UnsafeMutableRawPointer?) {
         guard context == &albaObservationContext else {
             super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
             return
@@ -51,7 +54,7 @@ internal final class KeyValuePublisher<ObservableObject : NSObject, Event> : NSO
             return
         }
         if let newValue = change?[.newKey] as? Event {
-            self.publish(newValue)
+            publisher.publish(newValue)
         } else {
             fatalError("\(change?[.newKey]) is not of type \(Event.self): kvo on \(key) of \(self.object)")
         }
@@ -69,16 +72,16 @@ extension KeyValuePublisher where ObservableObject : KeyValueObservable {
 
 public extension NSObject {
     
-    func kvoProxy<Event>(atKey key: String) -> PublisherProxy<Event> {
-        return KeyValuePublisher(of: self, atKey: key) <* PublisherProxy.init(strong:)
+    func kvoProxy<Event>(atKey key: String) -> Subscribe<Event> {
+        return KeyValuePublisher(of: self, atKey: key).proxy
     }
     
 }
 
 public extension KeyValueObservable where Self : NSObject {
     
-    func kvoProxy<Event>(atKey key: ObservableKeys) -> PublisherProxy<Event> {
-        return KeyValuePublisher(of: self, atKey: key) <* PublisherProxy.init(strong:)
+    func kvoProxy<Event>(atKey key: ObservableKeys) -> Subscribe<Event> {
+        return KeyValuePublisher(of: self, atKey: key).proxy
     }
     
 }
@@ -92,3 +95,4 @@ extension Progress : KeyValueObservable {
         case paused
     }
 }
+
